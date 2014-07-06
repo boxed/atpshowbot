@@ -12,5 +12,6 @@
                  [org.clojure/algo.generic "0.1.2"]
                  ]
 
+  :uberjar-name "atpshowbot.jar"
   :main ^:skip-aot atpshowbot.core
   )

@@ -6,6 +6,7 @@
   :min-lein-version "2.3.4"
   :dependencies [
                  [org.clojure/clojure "1.5.1"]
+                 [ring/ring-jetty-adapter "1.1.6"]
                  [irclj "0.5.0-alpha4"]
                  [midje "1.6.0"]
                  [org.clojure/algo.generic "0.1.2"]

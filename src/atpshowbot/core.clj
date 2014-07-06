@@ -128,7 +128,7 @@
 (defn app [req]
   {:status 200
    :headers {"Content-Type" "text/plain"}
-   :body (clojure.string/join "<br/>" (vote-tally state))})
+   :body (clojure.string/join "<br/>" (vote-tally @state))})
 
 (defn -main [web-port]
   (println "Connecting...")

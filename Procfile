@@ -1,1 +1,1 @@
-irc: java $JVM_OPTS -cp target/atpshowbot.jar clojure.main -m atpshowbot.core $PORT
+web: java $JVM_OPTS -cp target/atpshowbot.jar clojure.main -m atpshowbot.core $PORT

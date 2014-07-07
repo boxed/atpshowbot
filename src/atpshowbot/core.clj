@@ -123,7 +123,7 @@
   (println))
 
 
-(defn -main [web-port]
+(defn -main [& args]
   (println "Connecting...")
   (def irc (connect server port bot-nick :callbacks {:privmsg callback}))
 

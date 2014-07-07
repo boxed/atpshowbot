@@ -6,10 +6,10 @@
    ))
 
 ; - Constants -
-(def channel "#qwefoobar")
+(def channel "#atp")
 (def server "irc.freenode.org")
 (def port 6667)
-(def bot-nick "boxed-bot")
+(def bot-nick "atpbot-boxed")
 ;(def bot-nick-password "")
 
 
@@ -17,7 +17,7 @@
 (def state (atom {:votes {}, :links []}))
 ;; {
 ;;  :votes {"title" #{:nick1 :nick2}}
-;;  :links [["link" :nick1] ["another link"] :nick2]
+;;  :links [["link" :nick1] ["another link" :nick2]]
 ;; }
 
 
@@ -44,13 +44,16 @@
 
 (def help [
    "Options:"
-   "!suggest {title} - suggest a title."
-   "!vote {prefix of title} - vote on a title"
-   "!state - get the three most highly voted titles."
-   "!link {URL} - suggest a link."
-   "!help - see this message."
-   "To see titles/links, go to: http://<TBI>" ; TODO
+   "!s {title} - suggest a title."
+   "!v {prefix of title} - vote on a title"
+   "!state - show the number of votes of the suggested titles"
+   "!l {URL} - suggest a link."
+   "!ll - list links"
+   "!h - see this message."
 ])
+
+(defn list-links [state]
+  [(for [link (:links state)] (get link 0)) state])
 
 (defn add-link [state nick string]
   ["Link added" (update-in state [:links] conj [string nick])])
@@ -74,27 +77,28 @@
 
 (defn user-said-in-channel [state nick said]
   (let [[command string] (clojure.string/split said #" " 2)]
-    (cond
-     (= command "!state")
-       [(vote-tally state) state]
-     (or (= command "!s") (= command "!suggest"))
-       (if (nil? string)
-         [nil state]
-         (suggest-title state nick string))
-     (.startsWith command "!h")
-       [help state]
-     (.startsWith command "!l")
-       (if (nil? string)
-         [nil state]
-         (add-link state nick string))
-     (.startsWith command "!v")
-       (if (nil? string)
-         [nil state]
-         (vote state nick (normalize-title string)))
-     (.startsWith command "!d") ; debug
-       [(format "%s" state) state]
-     :else
-       [nil state]
+    (case command
+      "!state"
+        [(vote-tally state) state]
+      "!s"
+        (if (nil? string)
+          [nil state]
+          (suggest-title state nick string))
+      "!h"
+        [help state]
+      "!l"
+        (if (nil? string)
+          [nil state]
+          (add-link state nick string))
+      "!v"
+        (if (nil? string)
+          [nil state]
+          (vote state nick (normalize-title string)))
+      "!debug"
+        [(format "%s" state) state]
+      "!ll"
+        (list-links state)
+      [nil state]
      )))
 
 (defn handle-command [state command text ident]
@@ -103,10 +107,14 @@
     [nil state]))
 
 ; - irclj interfacing procedures -
+(defn working-reply [irc m string]
+  (let [m2 (if (.startsWith (:target m) "#") m (assoc m :target (:nick m)))]
+    (reply irc m2 string)))
+
 (defn say! [irc m string]
   (if (nil? string)
     nil
-    (reply irc m string)))
+    (working-reply irc m string)))
 
 (defn callback [irc args]
   (let [{text :text target :target user :user host :host command :command} args]

@@ -103,19 +103,19 @@
     [nil state]))
 
 ; - irclj interfacing procedures -
-(defn say! [irc string]
+(defn say! [irc m string]
   (if (nil? string)
     nil
-    (message irc channel string)))
+    (reply irc m channel string)))
 
 (defn callback [irc args]
   (let [{text :text target :target user :user host :host command :command} args]
     (if (= target channel)
       (let [[response, new_state] (handle-command @state command text (clojure.string/join "@"[user host]))]
-        (if (seq? response)
+        (if (sequential? response)
           (doseq [line response]
-            (say! irc line))
-          (say! irc response))
+            (say! irc args line))
+          (say! irc args response))
         (reset! state new_state)))))
 
 (defn debug-callback [irc & args]

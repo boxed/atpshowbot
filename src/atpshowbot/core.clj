@@ -3,7 +3,6 @@
    [irclj.core :refer :all]
    [irclj.parser :refer :all]
    [clojure.algo.generic.functor :refer :all]
-   [ring.adapter.jetty :as jetty]
    ))
 
 ; - Constants -
@@ -123,12 +122,6 @@
   (prn args)
   (println))
 
-; - Web part -
-
-(defn app [req]
-  {:status 200
-   :headers {"Content-Type" "text/plain"}
-   :body (clojure.string/join "\n" (vote-tally @state))})
 
 (defn -main [web-port]
   (println "Connecting...")
@@ -137,7 +130,4 @@
   ;(identify irc bot-nick-password)
 
   (println "Joining")
-  (join irc channel)
-
-  (println "Starting webapp")
-  (jetty/run-jetty app {:port (Integer. web-port) :join? false}))
+  (join irc channel))

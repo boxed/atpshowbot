@@ -106,17 +106,16 @@
 (defn say! [irc m string]
   (if (nil? string)
     nil
-    (reply irc m channel string)))
+    (reply irc m string)))
 
 (defn callback [irc args]
   (let [{text :text target :target user :user host :host command :command} args]
-    (if (= target channel)
-      (let [[response, new_state] (handle-command @state command text (clojure.string/join "@"[user host]))]
-        (if (sequential? response)
-          (doseq [line response]
-            (say! irc args line))
-          (say! irc args response))
-        (reset! state new_state)))))
+    (let [[response, new_state] (handle-command @state command text (clojure.string/join "@"[user host]))]
+      (if (sequential? response)
+        (doseq [line response]
+          (say! irc args line))
+        (say! irc args response))
+      (reset! state new_state))))
 
 (defn debug-callback [irc & args]
   (prn args)

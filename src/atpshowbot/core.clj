@@ -50,6 +50,7 @@
    "!l {URL} - suggest a link."
    "!ll - list links"
    "!h - see this message."
+   "This bot brought to you by boxed. https://github.com/boxed/atpshowbot"
 ])
 
 (defn list-links [state]

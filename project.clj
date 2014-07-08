@@ -10,6 +10,7 @@
                  [irclj "0.5.0-alpha4"]
                  [midje "1.6.0"]
                  [org.clojure/algo.generic "0.1.2"]
+                 [compojure "1.1.8"]
                  ]
 
   :uberjar-name "atpshowbot.jar"

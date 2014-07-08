@@ -3,6 +3,10 @@
    [irclj.core :refer :all]
    [irclj.parser :refer :all]
    [clojure.algo.generic.functor :refer :all]
+   [ring.adapter.jetty :as jetty]
+   [compojure.route :as route]
+   [compojure.core :refer [defroutes GET POST]]
+   [ring.util.response :as resp]
    ))
 
 ; - Constants -
@@ -43,7 +47,7 @@
       (format "%s: %s" votes title))))
 
 (def help [
-   "Options:"
+   "Commands:"
    "!s {title} - suggest a title."
    "!v {prefix of title} - vote on a title"
    "!state - show the number of votes of the suggested titles"
@@ -81,23 +85,23 @@
     (case command
       "!state"
         [(vote-tally state) state]
-      "!s"
+      ("!s" "!suggest")
         (if (nil? string)
           [nil state]
           (suggest-title state nick string))
-      "!h"
+      ("!h" "!help")
         [help state]
-      "!l"
+      ("!l" "!link")
         (if (nil? string)
           [nil state]
           (add-link state nick string))
-      "!v"
+      ("!v" "!vote")
         (if (nil? string)
           [nil state]
           (vote state nick (normalize-title string)))
       "!debug"
         [(format "%s" state) state]
-      "!ll"
+      ("!ll" "!listlinks")
         (list-links state)
       [nil state]
      )))
@@ -106,6 +110,7 @@
   (case command
     "PRIVMSG" (user-said-in-channel state ident text)
     [nil state]))
+
 
 ; - irclj interfacing procedures -
 (defn working-reply [irc m string]
@@ -131,11 +136,25 @@
   (println))
 
 
-(defn -main [& args]
+; - Web part -
+(defn app [req]
+  {:status 200
+   :headers {"Content-Type" "text/plain"}
+   :body (clojure.string/join "\n" (vote-tally @state))})
+
+(defroutes app
+  (GET "/" [] (resp/file-response "index.html" {:root "resources"}))
+  (GET "/state" [] {:status 200, :headers {"Content-Type" "application/edn"}}, :body (str @state))
+  (GET "/ping" [] "pong!")
+  (route/not-found "<h1>Page not found</h1>"))
+
+(defn -main [web-port]
   (println "Connecting...")
   (def irc (connect server port bot-nick :callbacks {:privmsg callback}))
 
   ;(identify irc bot-nick-password)
 
   (println "Joining")
-  (join irc channel))
+  (join irc channel)
+
+  (jetty/run-jetty app {:port (Integer. web-port) :join? false}))

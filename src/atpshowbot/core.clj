@@ -20,8 +20,8 @@
 ; - State, with example structure -
 (def state (atom {:votes {}, :links []}))
 ;; {
-;;  :votes {"title" #{:nick1 :nick2}}
-;;  :links [["link" :nick1] ["another link" :nick2]]
+;;  :votes {"title" {:votes #{"nick1" "nick2"} :author "nick1"}}
+;;  :links [["link" "nick1"] ["another link" "nick2"]]
 ;; }
 
 
@@ -144,6 +144,8 @@
 
 (defroutes app
   (GET "/" [] (resp/file-response "index.html" {:root "resources"}))
+  (GET "/client.js" [] (resp/file-response "client.js" {:root "resources"}))
+  (GET "/style.css" [] (resp/file-response "style.css" {:root "resources"}))
   (GET "/state" [] {:status 200, :headers {"Content-Type" "application/edn"}}, :body (str @state))
   (GET "/ping" [] "pong!")
   (route/not-found "<h1>Page not found</h1>"))

@@ -1,1 +1,29 @@
-asd
+body {
+  font-size: 16px;
+  font-family: helvetica neue;
+  font-weight: 200;
+}
+
+.footer {
+  margin-top: 40px;
+  color: lightgray;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+table, td {
+  border: 1px solid lightgray;
+}
+
+td, th {
+  padding-left: 7px;
+  padding-right: 7px;
+  text-align: left;
+}
+
+th {
+  color: gray;
+  font-weight: 200;
+}

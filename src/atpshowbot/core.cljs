@@ -57,6 +57,6 @@
   (reset! state (read-string response)))
 
 (defn ^:export run []
-  (GET "/state" {:handler handler})
+  (GET "/state" {:handler got-state})
   (reagent/render-component [root]
                             (.-body js/document)))

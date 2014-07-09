@@ -54,7 +54,7 @@
    ])
 
 (defn got-state [response]
-  (reset! state (read-string response)))
+  (reset! state (cljs.reader/read-string response)))
 
 (defn ^:export run []
   (GET "/state" {:handler got-state})

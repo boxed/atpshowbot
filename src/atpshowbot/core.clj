@@ -146,7 +146,7 @@
   (GET "/" [] (resp/file-response "index.html" {:root "resources"}))
   (GET "/client.js" [] (resp/file-response "client.js" {:root "resources"}))
   (GET "/style.css" [] (resp/file-response "style.css" {:root "resources"}))
-  (GET "/state" [] {:status 200, :headers {"Content-Type" "application/edn"}}, :body (str @state))
+  (GET "/state" [] {:status 200, :headers {"Content-Type" "application/edn"}}, :body (pr-str @state))
   (GET "/ping" [] "pong!")
   (route/not-found "<h1>Page not found</h1>"))
 

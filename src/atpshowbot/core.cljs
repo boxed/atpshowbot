@@ -1,13 +1,15 @@
 (ns atpshowbot
-  (:require [reagent.core :as reagent :refer [atom]]))
+  (:require [reagent.core :as reagent :refer [atom]]
+            [ajax.core :refer [GET POST]]))
 
 
-;(def state (atom {}))
+(def state (atom {}))
 
-(def state (atom {
-                  :votes {"title" {:votes #{"nick1" "nick2"} :author "nick1"}}
-                  :links [["http://foo.com" "nick1"] ["another link" "nick2"]]
-                  }))
+;; Example state for testing
+;(def state (atom {
+;                  :votes {"title" {:votes #{"nick1" "nick2"} :author "nick1"}}
+;                  :links [["http://foo.com" "nick1"] ["another link" "nick2"]]
+;                  }))
 
 (defn vote-tally [state]
   (let [titles-by-votes (-> (for [[title {nicks :votes author :author}] (:votes state)] [(count nicks) title author]) sort reverse)]
@@ -49,9 +51,12 @@
         [:div "!l {URL} - suggest a link."]
         [:div "!ll - list links"]
         [:div "!h - see this message."]]
-
    ])
 
+(defn got-state [response]
+  (reset! state (read-string response)))
+
 (defn ^:export run []
+  (GET "/state" {:handler handler})
   (reagent/render-component [root]
                             (.-body js/document)))

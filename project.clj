@@ -1,6 +1,6 @@
 (defproject atpshowbot "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "Showbot for ATP"
+  :url "https://github.com/boxed/atpshowbot"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :min-lein-version "2.3.4"
@@ -21,7 +21,7 @@
     :profiles {:prod {:cljsbuild
                     {:builds
                      {:client {:compiler
-                               {:optimizations :simple ;:advanced
+                               {:optimizations :simple ; valid options: :advanced, :simple
                                 :preamble ^:replace ["reagent/react.min.js"]
                                 :pretty-print false}}}}}
              :srcmap {:cljsbuild

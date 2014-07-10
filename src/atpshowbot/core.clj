@@ -6,6 +6,7 @@
    [ring.adapter.jetty :as jetty]
    [compojure.route :as route]
    [compojure.core :refer [defroutes GET POST]]
+   [compojure.handler :as handler]
    [ring.util.response :as resp]
    ))
 
@@ -20,8 +21,8 @@
 ; - State, with example structure -
 (def state (atom {:votes {}, :links []}))
 ;; {
-;;  :votes {"title" {:votes #{"nick1" "nick2"} :author "nick1"}}
-;;  :links [["link" "nick1"] ["another link" "nick2"]]
+;;  :votes {"title" {:voters #{"74.125.232.96" "74.125.232.96"} :author "nick1" :author-ip "74.125.232.96"}}
+;;  :links [["link" "nick1" "74.125.232.96"] ["another link" "nick2" "74.125.232.96"]]
 ;; }
 
 
@@ -35,22 +36,17 @@
       .trim
       (clojure.string/replace #"\.+$" "")))
 
-(defn ident-from-keyword [s]
-  (let [r (keyword (get (clojure.string/split (name s) #"!" 2) 1))]
-    (if (nil? r)
-      s
-      r)))
-
 (defn vote-tally [state]
-  (let [titles-by-votes (-> (for [[title {nicks :voters}] (:votes state)] [(count nicks) title]) sort reverse)]
-    (for [[votes title] titles-by-votes]
-      (format "%s: %s" votes title))))
+  (let [titles-by-votes (-> (for [[title {ips :voters}] (:votes state)] [(count ips) title]) sort reverse)]
+    (take 3
+      (for [[votes title] titles-by-votes]
+        (format "%s: %s" votes title)))))
 
 (def help [
    "Commands:"
-   "!s {title} - suggest a title."
+   "!s {title} - suggest a title. Votes for the title if it's already suggested."
    "!v {prefix of title} - vote on a title"
-   "!state - show the number of votes of the suggested titles"
+   "!state - show the number of votes of top 3 titles"
    "!l {URL} - suggest a link."
    "!ll - list links"
    "!h - see this message."
@@ -60,27 +56,27 @@
 (defn list-links [state]
   [(for [link (:links state)] (get link 0)) state])
 
-(defn add-link [state nick string]
-  ["Link added" (update-in state [:links] conj [string nick])])
+(defn add-link [state nick ip string]
+  [nil (update-in state [:links] conj [string nick ip])])
 
-(defn vote [state nick title]
+(defn vote [state ip title]
   (let [x (titles-with-prefix state title)]
     (case (count x)
       0 ["No such title suggested, use !s <title> to suggest it", state]
-      1 [nil (update-in state [:votes (first x) :voters] conj nick)]
+      1 [nil (update-in state [:votes (first x) :voters] conj ip)]
       ["Multiple titles match, please be more specific" state])))
 
-(defn suggest-title [state nick string]
+(defn suggest-title [state nick ip string]
   (let [title (normalize-title string)]
    (cond
     (> (count title) 74)
       ["That title is too long" state]
     (contains? (:votes state) title)
-      ["Sorry, already suggested" state]
+      (vote state ip title)
     :default
-      ["Suggestion added" (assoc-in state [:votes title] {:author nick, :voters #{nick}})])))
+      [nil (assoc-in state [:votes title] {:author nick, :author-ip ip, :voters #{ip}})])))
 
-(defn user-said-in-channel [state nick said]
+(defn user-said-in-channel [state nick ip said]
   (let [[command string] (clojure.string/split said #" " 2)]
     (case command
       "!state"
@@ -88,27 +84,29 @@
       ("!s" "!suggest")
         (if (nil? string)
           [nil state]
-          (suggest-title state nick string))
+          (suggest-title state nick ip string))
       ("!h" "!help")
         [help state]
       ("!l" "!link")
         (if (nil? string)
           [nil state]
-          (add-link state nick string))
+          (add-link state nick ip string))
       ("!v" "!vote")
         (if (nil? string)
           [nil state]
-          (vote state nick (normalize-title string)))
+          (vote state ip (normalize-title string)))
       "!debug"
-        [(format "%s" state) state]
+        (if (= nick "boxed")
+          [(format "%s" state) state]
+          [nil state])
       ("!ll" "!listlinks")
         (list-links state)
       [nil state]
      )))
 
-(defn handle-command [state command text ident]
+(defn handle-command [state command text nick ip]
   (case command
-    "PRIVMSG" (user-said-in-channel state ident text)
+    "PRIVMSG" (user-said-in-channel state nick ip text)
     [nil state]))
 
 
@@ -122,9 +120,16 @@
     nil
     (working-reply irc m string)))
 
+(defn host-to-ip [host]
+  (.getHostAddress (java.net.InetAddress/getByName host)))
+
 (defn callback [irc args]
-  (let [{text :text target :target user :user host :host command :command} args]
-    (let [[response, new_state] (handle-command @state command text (clojure.string/join "@"[user host]))]
+  (let [{text :text
+         target :target
+         nick :nick
+         host :host
+         command :command} args]
+    (let [[response, new_state] (handle-command @state command text nick (host-to-ip host))]
       (if (sequential? response)
         (doseq [line response]
           (say! irc args line))
@@ -142,12 +147,39 @@
    :headers {"Content-Type" "text/plain"}
    :body (clojure.string/join "\n" (vote-tally @state))})
 
+
+(defn map-function-on-map-vals [m f]
+  (apply merge
+         (map (fn [[k v]] {k (f v)})
+              m)))
+
+(defn count-and-did-vote [votes ip]
+  (-> votes
+      (assoc :votes (count (:voters votes)))
+      (assoc :did-vote (contains? (:voters votes) ip))
+      (dissoc :author-ip)
+      (dissoc :voters)))
+
+(defn web-state-projection [state ip]
+  (pr-str
+   (assoc state :votes
+     (map-function-on-map-vals (:votes state)
+                               #(count-and-did-vote % ip)))))
+
 (defroutes app
   (GET "/" [] (resp/file-response "index.html" {:root "resources"}))
   (GET "/client.js" [] (resp/file-response "client.js" {:root "resources"}))
   (GET "/style.css" [] (resp/file-response "style.css" {:root "resources"}))
-  (GET "/state" [] {:status 200, :headers {"Content-Type" "application/edn"}}, :body (pr-str @state))
+  (GET "/state" request {:status 200
+                         :headers {"Content-Type" "application/edn"}
+                         :body (web-state-projection @state (:remote-addr request))})
   (GET "/ping" [] "pong!")
+  (GET "/vote" request
+       (let [title (:title (:params request))
+             remote-addr (:remote-addr request)]
+         (reset! state (get (vote @state remote-addr title) 1))
+         {:headers {"Content-Type" "application/edn"}
+          :body (web-state-projection @state remote-addr)}))
   (route/not-found "<h1>Page not found</h1>"))
 
 (defn -main [web-port]
@@ -159,4 +191,4 @@
   (println "Joining")
   (join irc channel)
 
-  (jetty/run-jetty app {:port (Integer. web-port) :join? false}))
+  (jetty/run-jetty (handler/site app) {:port (Integer. web-port) :join? false}))

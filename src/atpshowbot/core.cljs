@@ -7,7 +7,7 @@
 
 ;; Example state for testing
 ;(def state (atom {
-;                  :votes {"title" {:votes #{"nick1" "nick2"} :author "nick1"}}
+;                  :votes {"title" {:votes 3, :author "nick1", :did-vote true}}
 ;                  :links [["http://foo.com" "nick1"] ["another link" "nick2"]]
 ;                  }))
 

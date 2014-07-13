@@ -8,6 +8,7 @@
    [compojure.core :refer [defroutes GET POST]]
    [compojure.handler :as handler]
    [ring.util.response :as resp]
+   [instar.core :refer [transform]]
    ))
 
 ; - Constants -
@@ -147,24 +148,14 @@
    :headers {"Content-Type" "text/plain"}
    :body (clojure.string/join "\n" (vote-tally @state))})
 
-
-(defn map-function-on-map-vals [m f]
-  (apply merge
-         (map (fn [[k v]] {k (f v)})
-              m)))
-
-(defn count-and-did-vote [votes ip]
-  (-> votes
-      (assoc :votes (count (:voters votes)))
-      (assoc :did-vote (contains? (:voters votes) ip))
-      (dissoc :author-ip)
-      (dissoc :voters)))
-
 (defn web-state-projection [state ip]
   (pr-str
-   (assoc state :votes
-     (map-function-on-map-vals (:votes state)
-                               #(count-and-did-vote % ip)))))
+    (transform state
+               [:votes *] #(-> %
+                               (assoc :votes (count (:voters %)))
+                               (assoc :did-vote (contains? (:voters %) ip))
+                               (dissoc :author-ip)
+                               (dissoc :voters)))))
 
 (defroutes app
   (GET "/" [] (resp/file-response "index.html" {:root "resources"}))

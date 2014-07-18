@@ -41,4 +41,4 @@
                                  :pretty-print true}}}}
   :uberjar-name "atpshowbot.jar"
   :main ^:skip-aot atpshowbot.core
-  )
+ )

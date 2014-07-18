@@ -1,5 +1,7 @@
 # atpshowbot
 
+[![Build Status](https://travis-ci.org/boxed/atpshowbot.svg?branch=master)](https://travis-ci.org/boxed/atpshowbot)
+
 An IRC bot for the Accidental Tech Podcast. The channel is #atp on irc.freenode.org, the name of the bot is atpbot-boxed.
 
 

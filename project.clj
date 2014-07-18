@@ -16,7 +16,8 @@
                  [cljs-ajax "0.2.6"]
                  [instar "1.0.0"]
                  ]
-  :plugins [[lein-cljsbuild "1.0.2"]]
+  :plugins [[lein-cljsbuild "1.0.2"]
+            [lein-midje "3.0.0"]]
   :hooks [leiningen.cljsbuild]
 
     :profiles {:prod {:cljsbuild
